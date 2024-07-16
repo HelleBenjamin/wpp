@@ -9,10 +9,9 @@
 #define supportedArchitectures "Supported architectures: X86"
 #define version "Wuf++ Interpreter Compiler v0.1.0"
 
-bool os; // 0 = linux, 1 = windows
 #ifdef _WIN32
     bool os = 1;
-#elif __linux__
+#elif (__linux__)
     bool os = 0;
 #endif
 
