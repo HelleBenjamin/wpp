@@ -230,19 +230,19 @@ void compileX86() {
     compiledProgram.push_back("     jmp edx");
     if (program[pc] == 'i') {
         compiledProgram.push_back("readc:");
-        compiledProgram.push_back("     push ecx");
+        compiledProgram.push_back("     mov edi, ecx");
         compiledProgram.push_back("     mov eax, 0x3");
         compiledProgram.push_back("     mov ebx, 0x0");
         compiledProgram.push_back("     mov ecx, ebx");
         compiledProgram.push_back("     mov edx, 1");
         compiledProgram.push_back("     int 0x80");
-        compiledProgram.push_back("     pop ecx");
-        compiledProgram.push_back("     ret");        
+        compiledProgram.push_back("     mov ecx, edi");
+        compiledProgram.push_back("     ret");     
         pc++;
     }
     if (program[pc] == 'o') {
         compiledProgram.push_back("printc:");
-        compiledProgram.push_back("     push ecx");
+        compiledProgram.push_back("     mov edi, ecx");
         compiledProgram.push_back("     push ebx");   
         compiledProgram.push_back("     mov eax, 0x4");
         compiledProgram.push_back("     mov ebx, 0x1");
@@ -250,7 +250,7 @@ void compileX86() {
         compiledProgram.push_back("     mov edx, 1");
         compiledProgram.push_back("     int 0x80");
         compiledProgram.push_back("     pop ebx");
-        compiledProgram.push_back("     pop ecx");
+        compiledProgram.push_back("     mov ecx, edi");
         compiledProgram.push_back("     ret");
         pc++;
     }
@@ -305,10 +305,10 @@ void compileX86() {
                 compiledProgram.push_back("     dec ecx");
                 break;
             case '$':
-                compiledProgram.push_back("     push bx");
+                compiledProgram.push_back("     mov dx, bx");
                 compiledProgram.push_back("     mov bx, cx");
                 compiledProgram.push_back("     call printc");
-                compiledProgram.push_back("     pop bx");
+                compiledProgram.push_back("     mov bx, dx");
                 break;
             case '#':
                 compiledProgram.push_back("     mov bx, '" + std::string(1, program[i+1]) + "'");
