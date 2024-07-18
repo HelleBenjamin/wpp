@@ -5,14 +5,14 @@
 #include <vector>
 #include <bitset>
 
-#define helpMessage "-s <source file> -o <output file> -h help -v version -c compile -i interpret -? print syntax -I interpret without file"
+#define helpMessage "-s <source file> -o <output file> -h help -v version -c compile -i interpret -? print syntax -I interpret without file -asm save asm"
 #define supportedArchitectures "Supported architectures: X86"
-#define version "Wuf++ Interpreter Compiler v0.1.0"
+#define version "Wuf++ Interpreter Compiler v0.1.1"
 
 #ifdef _WIN32
-    bool os = 1;
+    int os_type = 1;
 #elif (__linux__)
-    bool os = 0;
+    int os_type = 0;
 #endif
 
 using namespace std;
@@ -20,6 +20,7 @@ using namespace std;
 vector<char> program; // source program
 vector<string> compiledProgram; // compiled program
 int mode = 0; //0 = compile, 1 = interpret, 2 = interpret without file
+bool save_asm = false;
 
 
 
@@ -215,6 +216,7 @@ void Interpreter() {
 }
 
 void compileX86() {
+    cout << "Compiling..." << endl;
     char c;
     int pc = 0;
     int loopLabel = 0;
@@ -223,42 +225,77 @@ void compileX86() {
     }
 
     compiledProgram.push_back("global _start");
-    compiledProgram.push_back(";wic v0.1.0");
+    compiledProgram.push_back(";wic v0.1.1");
     compiledProgram.push_back("section .text");
 
     compiledProgram.push_back("jp_cx:");
     compiledProgram.push_back("     jmp edx");
-    if (program[pc] == 'i') {
-        compiledProgram.push_back("readc:");
-        compiledProgram.push_back("     mov edi, ecx");
-        compiledProgram.push_back("     mov eax, 0x3");
-        compiledProgram.push_back("     mov ebx, 0x0");
-        compiledProgram.push_back("     mov ecx, ebx");
-        compiledProgram.push_back("     mov edx, 1");
-        compiledProgram.push_back("     int 0x80");
-        compiledProgram.push_back("     mov ecx, edi");
-        compiledProgram.push_back("     ret");     
-        pc++;
-    }
-    if (program[pc] == 'o') {
-        compiledProgram.push_back("printc:");
-        compiledProgram.push_back("     mov edi, ecx");
-        compiledProgram.push_back("     push ebx");   
-        compiledProgram.push_back("     mov eax, 0x4");
-        compiledProgram.push_back("     mov ebx, 0x1");
-        compiledProgram.push_back("     mov ecx, esp");
-        compiledProgram.push_back("     mov edx, 1");
-        compiledProgram.push_back("     int 0x80");
-        compiledProgram.push_back("     pop ebx");
-        compiledProgram.push_back("     mov ecx, edi");
-        compiledProgram.push_back("     ret");
-        pc++;
+    switch (os_type){
+        case 0: // linux
+            if (program[pc] == 'i') {
+                compiledProgram.push_back("readc:");
+                compiledProgram.push_back("     mov edi, ecx");
+                compiledProgram.push_back("     mov eax, 0x3");
+                compiledProgram.push_back("     mov ebx, 0x0");
+                compiledProgram.push_back("     mov ecx, ebx");
+                compiledProgram.push_back("     mov edx, 1");
+                compiledProgram.push_back("     int 0x80");
+                compiledProgram.push_back("     mov ecx, edi");
+                compiledProgram.push_back("     ret");     
+                pc++;
+            }
+            if (program[pc] == 'o') {
+                compiledProgram.push_back("printc:");
+                compiledProgram.push_back("     mov edi, ecx");
+                compiledProgram.push_back("     push ebx");   
+                compiledProgram.push_back("     mov eax, 0x4");
+                compiledProgram.push_back("     mov ebx, 0x1");
+                compiledProgram.push_back("     mov ecx, esp");
+                compiledProgram.push_back("     mov edx, 1");
+                compiledProgram.push_back("     int 0x80");
+                compiledProgram.push_back("     pop ebx");
+                compiledProgram.push_back("     mov ecx, edi");
+                compiledProgram.push_back("     ret");
+                pc++;
+            }
+            break;
+        case 1: // windows
+            compiledProgram.push_back("extern ExitProcess");
+            if (program[pc] == 'i') {
+                compiledProgram.push_back("extern scanf");
+                compiledProgram.push_back("readc:");
+                pc++;
+            }
+            if (program[pc] == 'o') {
+                compiledProgram.push_back("extern putchar");
+                compiledProgram.push_back("printc:");
+                compiledProgram.push_back("     push ebp");
+                compiledProgram.push_back("     mov ebp, esp");
+                compiledProgram.push_back("     push ebx");
+                compiledProgram.push_back("     call putchar");
+                compiledProgram.push_back("     pop ebx");
+                compiledProgram.push_back("     mov esp, ebp");
+                compiledProgram.push_back("     pop ebp");
+                compiledProgram.push_back("     ret");
+                pc++;
+            }
+            if (program[pc] == 'i') {
+                compiledProgram.push_back("extern getchar");
+                compiledProgram.push_back("readc:");
+                compiledProgram.push_back("     call getchar");
+                compiledProgram.push_back("     mov ebx, eax");
+                pc++;
+            }
+            break;
     }
 
     compiledProgram.push_back("_start:");
     compiledProgram.push_back("     mov ebx, 0");
     compiledProgram.push_back("     mov ecx, 0");
     compiledProgram.push_back("     mov edx, 0");
+    compiledProgram.push_back("     push ebp");
+    compiledProgram.push_back("     mov ebp, esp");
+    compiledProgram.push_back("     sub esp, 0x200");
     compiledProgram.push_back("main:");
     int get_pc = 0;
     for(int i = pc; i < program.size(); i++) {
@@ -285,15 +322,20 @@ void compileX86() {
             case ',':
                 compiledProgram.push_back("     call readc");
                 break;
-            case '[':
-                compiledProgram.push_back("     sub epc, ecx");
-                break;
-            case ']':
-                compiledProgram.push_back("     call .get_pc" + std::to_string(get_pc));
-                compiledProgram.push_back("     .get_pc" + std::to_string(get_pc) + ": pop edx");
-                compiledProgram.push_back("     add edx, ecx");
+            case '&':;
+                compiledProgram.push_back("     lea edx, [ecx + main]");
                 compiledProgram.push_back("     jmp edx");
                 get_pc++;
+                break;
+            case '[':
+                compiledProgram.push_back("     lea edx, [ecx + main]");
+                compiledProgram.push_back("     sub edx, ecx");
+                compiledProgram.push_back("     jmp edx");
+                break;
+            case ']':
+                compiledProgram.push_back("     lea edx, [ecx + main]");
+                compiledProgram.push_back("     add edx, ecx");
+                compiledProgram.push_back("     jmp edx");
                 break;
             case '!':
                 compiledProgram.push_back("     not ebx");
@@ -334,9 +376,17 @@ void compileX86() {
                 i++;
                 break;
             case '=':
-                compiledProgram.push_back("     mov eax, 1");
-                compiledProgram.push_back("     mov ebx, 0");
-                compiledProgram.push_back("     int 0x80");
+                switch (os_type) {
+                    case 0:
+                        compiledProgram.push_back("     mov eax, 1");
+                        compiledProgram.push_back("     mov ebx, 0");
+                        compiledProgram.push_back("     int 0x80");
+                    break;
+                    case 1:
+                        compiledProgram.push_back("     xor eax, eax");
+                        compiledProgram.push_back("     call ExitProcess");
+                    break;
+                }
                 break;
             case '/':
                 compiledProgram.push_back("     add ebx, ecx");
@@ -359,7 +409,6 @@ void compileX86() {
         output_file << compiledProgram[i] << endl;
         //cout << compiledProgram[i] << endl;
     }
-    cout << "Compiled" << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -402,18 +451,24 @@ int main(int argc, char *argv[]) {
         if (string(argv[i]) == "-I") {
             mode = 2;
         }
+        if (string(argv[i]) == "-asm") {
+            save_asm = true;
+        }
     }
     if (source_file.is_open() && mode == 0 && output_file.is_open()) {
         compileX86();
-        if (os == 0){ //linux
-            system(("nasm -f elf32 -o " + output_name + ".o " + source_name + ".asm").c_str());
-            system(("ld -m elf_i386 -o " + output_name + " -static -nostdlib " + output_name + ".o").c_str());
-            system(("rm " + output_name + ".o").c_str());
-        } else if (os == 1){ //windows
-            system(("nasm -f win32 -o " + output_name + ".o " + source_name + ".asm").c_str());
-            system(("ld -m i386pe -o " + output_name + " -static -nostdlib " + output_name + ".o").c_str());
-            system(("del " + output_name + ".o").c_str());
-            
+        if (os_type == 0){ //linux
+            system(("nasm -f elf32 -o " + source_name + ".o " + filename).c_str());
+            system(("ld -m elf_i386 -o " + output_name + " -static -nostdlib " + source_name + ".o").c_str());
+            system(("rm " + source_name + ".o").c_str());
+            if (!save_asm) system(("rm " + filename).c_str());
+            cout << "Done" << endl;
+        } else if (os_type == 1){ //windows
+            system(("nasm -f win32 -o " + source_name + ".o " + filename).c_str());
+            system(("ld -m i386pe -o " + output_name + " -static " + source_name + ".o").c_str());
+            system(("del " + source_name + ".o").c_str());
+            if (!save_asm) system(("del " + filename).c_str());
+            cout << "Done" << endl;
         }
         //system(("./wic -s " + source_name + " -o " + output_name + ".asm").c_str());
     } if (mode == 1 && source_file.is_open()) {

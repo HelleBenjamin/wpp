@@ -1,5 +1,5 @@
 # Wuf++
-**Wuf++**(wuf plus plus, wpp) is a low-level programming language. Can be interpreted or compiled. It is possible to run wpp programs on any cpu architecture, for example x86 and Z80, requires custom compiler for different architectures.
+**Wuf++**(wuf plus plus, wpp) is a low-level programming language. Can be interpreted or compiled. It is possible to run wpp programs on any cpu architecture, for example x86 and Z80, requires custom compiler for different architectures. For cross-compatibility use interpreter.
 ### Registers:
 - **bx** - main register, bl mainly used
 - **cx** - main pointer
@@ -50,16 +50,16 @@ section .text
 jp_cx:
      jmp edx
 readc:
-     push ecx
+     mov edi, ecx
      mov eax, 0x3
      mov ebx, 0x0
      mov ecx, ebx
      mov edx, 1
      int 0x80
-     pop ecx
+     mov ecx, edi
      ret
 printc:
-     push ecx
+     mov edi, ecx
      push ebx
      mov eax, 0x4
      mov ebx, 0x1
@@ -67,12 +67,15 @@ printc:
      mov edx, 1
      int 0x80
      pop ebx
-     pop ecx
+     mov ecx, edi
      ret
 _start:
      mov ebx, 0
      mov ecx, 0
      mov edx, 0
+     push ebp
+     mov ebp, esp
+     sub esp, 0x200
 main:
      inc ecx
      inc ecx
@@ -135,11 +138,14 @@ wic -I
 - gcc/g++
 
 # Changelog
+## WIC 0.1.1
+- Fixed jump related bugs in compiler
+- Added Windows support (beta version)
 ## WIC 0.1.0
 - Initial release
 - Supported compiled architectures: X86
 # Wuf++ versions
-## Wpp 1.0.0
+## Wuf++ 1.0.0
 - First version
 - Basic syntax:
 ```wpp
