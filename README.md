@@ -121,6 +121,7 @@ loop0:
 - **-I** - interpret in terminal
 - **-h** - help
 - **-v** - version
+- **-asm** - save assembly code
 
 An example of using the compiler:
 ```bash
