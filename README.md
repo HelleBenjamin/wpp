@@ -134,7 +134,7 @@ An example of using the interpreter:
 wic -i -s example.wpp
 wic -I
 ```
-### Prerequisites:
+### Required tools:
 - Nasm
 - gcc/g++
 
