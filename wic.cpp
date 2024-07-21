@@ -25,7 +25,7 @@ bool save_asm = false;
 
 
 /* Wuf++ Interpreter Compiler, WIC
- * Copyright (c) 2024 Pepe57
+ * Copyright (c) 2024 Benjamin H.
  * All rights reserved.
  * MIT License
 */
@@ -436,6 +436,7 @@ int main(int argc, char *argv[]) {
             output_file.open(filename);
         }
         if(string(argv[i]) == "-v") {
+            cout << "Copyright (c) 2024 Benjamin H." << endl;
             cout << version << endl;
             cout << supportedArchitectures << endl;
         }
