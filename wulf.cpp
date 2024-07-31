@@ -48,6 +48,7 @@ Syntax:
  - endloop //end loop
  - inc <var> //increment variable
  - dec <var> //decrement variable
+ - prints <message> //print string message
  - # //comment
 
 
@@ -83,8 +84,10 @@ vector<string> fullyCompiledProgram; //final output
 void compile(vector<string> program, int len) {
     unsigned int endifCounter = 0;
     unsigned int loopCounter = 0;
-    vector<string> compiledProgram; //supported architectures: X86 on linux, windows not supported
+    unsigned int msgCounter = 0; 
+    vector<string> compiledProgram;
     vector<string> compiledVariables; //bss section
+    vector<string> compiledData; //data section
     compiledProgram.push_back("bits 32");
     compiledProgram.push_back("global _start");
     compiledProgram.push_back(";wulf interpreter compiler v0.1.0");
@@ -99,16 +102,29 @@ void compile(vector<string> program, int len) {
     compiledProgram.push_back("    mov ecx, edi");
     compiledProgram.push_back("    ret");
 
-    compiledProgram.push_back("printc:");
+    compiledProgram.push_back("printc:");  
     compiledProgram.push_back("    push ebx");   
     compiledProgram.push_back("    mov eax, 0x4");
     compiledProgram.push_back("    mov ebx, 0x1");
     compiledProgram.push_back("    mov ecx, esp");
     compiledProgram.push_back("    mov edx, 1");
     compiledProgram.push_back("    int 0x80");
-    compiledProgram.push_back("    pop ebx");
-    compiledProgram.push_back("    mov ecx, edi");
+    compiledProgram.push_back("    add esp, 0x4");
     compiledProgram.push_back("    ret");
+
+    compiledProgram.push_back("prints:");
+    compiledProgram.push_back("    .prints_loop:");
+    compiledProgram.push_back("        mov ebx, [edx]");
+    compiledProgram.push_back("        cmp ebx, 0x0");
+    compiledProgram.push_back("        je .prints_end");
+    compiledProgram.push_back("        push edx");
+    compiledProgram.push_back("        call printc");
+    compiledProgram.push_back("        pop edx");
+    compiledProgram.push_back("        inc edx");
+    compiledProgram.push_back("        jmp .prints_loop");
+    compiledProgram.push_back("    .prints_end:");
+    compiledProgram.push_back("        ret");
+
 
     compiledProgram.push_back("_start:");
     compiledProgram.push_back("    mov ebp, esp");
@@ -116,8 +132,10 @@ void compile(vector<string> program, int len) {
     compiledProgram.push_back("    jmp main");
 
     compiledVariables.push_back("section .bss");
-    compiledVariables.push_back("    loopTimes: resb 4");
-    compiledVariables.push_back("    loopCounter: resb 4");
+    compiledVariables.push_back("   loopTimes: resb 4");
+    compiledVariables.push_back("   loopCounter: resb 4");
+
+    compiledData.push_back("section .data");
     while (line < len) {
         string instruction = program[line];
         instruction.erase(0, instruction.find_first_not_of("\t "));
@@ -338,11 +356,21 @@ void compile(vector<string> program, int len) {
         if(instruction.find("dec ") != string::npos) {
             compiledProgram.push_back("    dec dword [" + parameter1 + "]");
         }
+        if(instruction.find("prints ") != string::npos) {
+            compiledData.push_back("    msg" + to_string(msgCounter) + ": db " + parameter1 + ", 0x0");
+            compiledProgram.push_back("    mov edx, msg" + to_string(msgCounter));
+            compiledProgram.push_back("    call prints");
+            msgCounter++;
+        }
         line++;
     }
 
     for(int i = 0; i < compiledProgram.size(); i++) {
         fullyCompiledProgram.push_back(compiledProgram[i]);
+    }
+
+    for(int i = 0; i < compiledData.size(); i++) {
+        fullyCompiledProgram.push_back(compiledData[i]);
     }
 
     for(int i = 0; i < compiledVariables.size(); i++) {
