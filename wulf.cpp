@@ -44,6 +44,10 @@ Syntax:
  - assigni <var> <value> //assign value to int variable
  - arrasgnc <arr> <index> <value> //assign value to char array
  - arrasgni <arr> <index> <value> //assign value to int array
+ - loop <times> //loop x times
+ - endloop //end loop
+ - inc <var> //increment variable
+ - dec <var> //decrement variable
  - # //comment
 
 
@@ -78,6 +82,7 @@ vector<string> fullyCompiledProgram; //final output
 
 void compile(vector<string> program, int len) {
     unsigned int endifCounter = 0;
+    unsigned int loopCounter = 0;
     vector<string> compiledProgram; //supported architectures: X86 on linux, windows not supported
     vector<string> compiledVariables; //bss section
     compiledProgram.push_back("bits 32");
@@ -111,6 +116,8 @@ void compile(vector<string> program, int len) {
     compiledProgram.push_back("    jmp main");
 
     compiledVariables.push_back("section .bss");
+    compiledVariables.push_back("    loopTimes: resb 4");
+    compiledVariables.push_back("    loopCounter: resb 4");
     while (line < len) {
         string instruction = program[line];
         instruction.erase(0, instruction.find_first_not_of("\t "));
@@ -311,6 +318,25 @@ void compile(vector<string> program, int len) {
         }
         if(instruction.find("arrasgni ") != string::npos) {
             compiledProgram.push_back("    mov dword [" + parameter1 + " + " + (to_string(stoi(parameter2)*4)) + "]," + parameter3);
+        }
+        if(instruction.find("loop ") != string::npos) {
+            compiledProgram.push_back("    mov eax, " +parameter1);
+            compiledProgram.push_back("    mov dword [loopTimes], eax");
+            compiledProgram.push_back("    .loop" + to_string(loopCounter) + ":");
+            compiledProgram.push_back("    dec dword [loopTimes]");
+            loopCounter++;
+        }
+        if(instruction.find("endloop") != string::npos) {
+            compiledProgram.push_back("    cmp dword [loopTimes], 0");
+            compiledProgram.push_back("    je .endloop" + to_string(loopCounter-1));
+            compiledProgram.push_back("    jnz .loop" + to_string(loopCounter-1));
+            compiledProgram.push_back("    .endloop" + to_string(loopCounter - 1) + ":");
+        }
+        if(instruction.find("inc ") != string::npos) {
+            compiledProgram.push_back("    inc dword [" + parameter1 + "]");
+        }
+        if(instruction.find("dec ") != string::npos) {
+            compiledProgram.push_back("    dec dword [" + parameter1 + "]");
         }
         line++;
     }
