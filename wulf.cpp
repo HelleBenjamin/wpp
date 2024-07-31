@@ -163,18 +163,43 @@ void compile(vector<string> program, int len) {
             compiledProgram.push_back("    pop ebp");
             compiledProgram.push_back("    ret");
         }
-        if(instruction.find("if ") != string::npos) {
+        if(instruction.find("ifc ") != string::npos) { //if condition for char
             endifCounter++;
-            if (parameter1 == "eq") {
-                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-                compiledProgram.push_back("    cmp eax, [" + parameter3 + "]");
-                compiledProgram.push_back("    jne .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is not met, else continue
+            uint8_t secondischar = 0;
+            if (parameter3.find("'") != string::npos) secondischar = 1;
+            switch (secondischar){
+                case 0:
+                    if (parameter2 == "==") {
+                        compiledProgram.push_back("    mov al, [" + parameter1 + "]");
+                        compiledProgram.push_back("    cmp al, [" + parameter3 + "]");
+                        compiledProgram.push_back("    jne .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is met, else continue
+                    } if (parameter2 == "!=") {
+                        compiledProgram.push_back("    mov al, [" + parameter1 + "]");
+                        compiledProgram.push_back("    cmp al, [" + parameter3 + "]");
+                        compiledProgram.push_back("    je .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is not met, else continue
+                    }
+                    break;
+                case 1:
+                    if (parameter2 == "==") {
+                        compiledProgram.push_back("    mov al, [" + parameter1 + "]");
+                        compiledProgram.push_back("    cmp al, " + parameter3);
+                        compiledProgram.push_back("    jne .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is met, else continue
+                    } if (parameter2 == "!=") {
+                        compiledProgram.push_back("    mov al, [" + parameter1 + "]");
+                        compiledProgram.push_back("    cmp al, " + parameter3);
+                        compiledProgram.push_back("    je .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is not met, else continue
+                    }
+                    break;
+
             }
-            if (parameter1 == "neq") {
-                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-                compiledProgram.push_back("    cmp eax, [" + parameter3 + "]");
-                compiledProgram.push_back("    je .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is met, else continue
-            }
+        }
+        if(instruction.find("ifi ") != string::npos) { //if condition for int
+            /*endifCounter++;
+            uint8_t secondisint = false;
+            if (parameter3.find("0x") != string::npos) secondisint = true;
+            switch (secondisint){
+                case 0:
+            }*/
         }
         if(instruction.find("endif") != string::npos) {
             compiledProgram.push_back("    .endif" + to_string(endifCounter - 1) + ":");
