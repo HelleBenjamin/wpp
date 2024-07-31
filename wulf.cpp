@@ -199,7 +199,6 @@ void compile(vector<string> program, int len) {
         }
         else if(strcmp(instruction.c_str(), "int") == 0) {
             compiledVariables.push_back("   " + parameter1 + ": resb 4");
-            cout << parameter1 << endl;
         }
         else if(strcmp(instruction.c_str(), "char") == 0) {
             compiledVariables.push_back("   " + parameter1 + ": resb 1");
@@ -304,24 +303,34 @@ void compile(vector<string> program, int len) {
             compiledProgram.push_back("    .endif" + to_string(endifCounter - 1) + ":");
         }
         else if(strcmp(instruction.c_str(), "add") == 0) {
+            bool secondisint = false;
+            if (isdigit(parameter3[0])) secondisint = true;
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-            compiledProgram.push_back("    add eax, [" + parameter3 + "]");
+            if (secondisint) compiledProgram.push_back("    add eax, " + parameter3);
+            else compiledProgram.push_back("    add eax, [" + parameter3 + "]");
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
         else if(strcmp(instruction.c_str(), "sub") == 0) {
+            bool secondisint = false;
+            if (isdigit(parameter3[0])) secondisint = true;
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-            compiledProgram.push_back("    sub eax, [" + parameter3 + "]");
+            if (secondisint) compiledProgram.push_back("    sub eax, " + parameter3);
+            else compiledProgram.push_back("    sub eax, [" + parameter3 + "]");
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
         else if(strcmp(instruction.c_str(), "mul") == 0) {
+            bool secondisint = false;
+            if (isdigit(parameter3[0])) secondisint = true;
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-            compiledProgram.push_back("    imul eax, [" + parameter3 + "]");
+            if (secondisint) compiledProgram.push_back("    imul eax, " + parameter3);
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
         else if(strcmp(instruction.c_str(), "div") == 0) {
+            bool secondisint = false;
+            if (isdigit(parameter3[0])) secondisint = true;
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-            compiledProgram.push_back("    cdq");
-            compiledProgram.push_back("    idiv [" + parameter3 + "]");
+            if (secondisint) compiledProgram.push_back("    cdq");
+            compiledProgram.push_back("    idiv " + parameter3);
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
         else if(strcmp(instruction.c_str(), "cin") == 0) { //char input
@@ -354,16 +363,48 @@ void compile(vector<string> program, int len) {
             compiledProgram.push_back("    int 0x80");
         }
         else if(strcmp(instruction.c_str(), "assigni") == 0) {
-            compiledProgram.push_back("    mov dword [" + parameter1 + "]," + parameter2);
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov dword [" + parameter1 + "],eax");
+            }
+            else {
+                compiledProgram.push_back("    mov dword [" + parameter1 + "]," + parameter2);
+            }
         }
         else if(strcmp(instruction.c_str(), "assignc") == 0) {
-            compiledProgram.push_back("    mov byte [" + parameter1 + "]," + parameter2);
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov byte [" + parameter1 + "],al");
+            }
+            else {
+                compiledProgram.push_back("    mov byte [" + parameter1 + "]," + parameter2);
+            }
         }
         else if(strcmp(instruction.c_str(), "arrassignc") == 0) {
-            compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter2 + "]," + parameter3);
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter3 + "],al");
+            }
+            else {
+                compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter3 + "]," + parameter2);
+            }
         }
         else if(strcmp(instruction.c_str(), "arrassigni") == 0) {
-            compiledProgram.push_back("    mov dword [" + parameter1 + " + " + (to_string(stoi(parameter2)*4)) + "]," + parameter3);
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov dword [" + parameter1 + " + " + parameter3 + "],eax");
+            }
+            else {
+                compiledProgram.push_back("    mov dword [" + parameter1 + " + " + parameter3 + "]," + parameter2);
+            }
         }
         else if(strcmp(instruction.c_str(), "loop") == 0) {
             compiledProgram.push_back("    mov eax, " + parameter1);
