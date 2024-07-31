@@ -69,6 +69,29 @@ main
     endProgram
 */
 
+short strcmp(const char *str1, const char *str2) { // string compare
+    int i = 0;
+    while (str1[i] != '\0') {
+        if (str1[i] != str2[i]) {
+            return 1;
+        }
+        i++;
+    }
+    return 0;
+}
+
+short startsWith(const char *str1, const char *str2) {
+    while (*str2 != '\0') {
+        if (*str1 != *str2) {
+            return 1;
+        }
+        str1++;
+        str2++;
+    }
+    return 0;
+}
+
+
 int call_stack[1000] = {0};
 int call_stack_pointer = 0;
 int line = 0;
@@ -138,11 +161,14 @@ void compile(vector<string> program, int len) {
     compiledData.push_back("section .data");
     while (line < len) {
         string instruction = program[line];
+        string wholeInstruction = instruction;
+        string parameter1, parameter2, parameter3, parameter4, parameter5 = "";
         instruction.erase(0, instruction.find_first_not_of("\t "));
-        string parameter1, parameter2, parameter3, parameter4, parameter5;
+
         int spaceIndex = instruction.find(' ');
         if (spaceIndex != string::npos) {
             parameter1 = instruction.substr(spaceIndex + 1);
+            instruction = instruction.substr(0, spaceIndex);
             spaceIndex = parameter1.find(' ');
             if (spaceIndex != string::npos) {
                 parameter2 = parameter1.substr(spaceIndex + 1);
@@ -164,40 +190,42 @@ void compile(vector<string> program, int len) {
                 }
             }
         }
+
         if(halt) break;
-        if(instruction == "\n") line++;
-        if(instruction == " ") line++;
-        if(instruction.find("#") != string::npos){
+        else if(instruction == "\n") line++;
+        else if(wholeInstruction == " ") line++;
+        else if(startsWith(instruction.c_str(), "#") == 0) {
             compiledProgram.push_back(";" + instruction);
         }
-        if(instruction.find("int ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "int") == 0) {
             compiledVariables.push_back("   " + parameter1 + ": resb 4");
+            cout << parameter1 << endl;
         }
-        if(instruction.find("char ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "char") == 0) {
             compiledVariables.push_back("   " + parameter1 + ": resb 1");
         }
-        if(instruction.find("array ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "array") == 0) {
             if(parameter1.find("char") != string::npos) {
                 compiledVariables.push_back("   " + parameter2 + ": resb " + parameter3);
             } else {
                 compiledVariables.push_back("   " + parameter2 + ": resd " + to_string(stoi(parameter3) * 4));
             }
         }
-        if(instruction.find("function ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "function") == 0) {
             compiledProgram.push_back(parameter1 + ":");
             compiledProgram.push_back("    push ebp");
             compiledProgram.push_back("    mov ebp, esp");
             compiledProgram.push_back("    sub esp, 0x1000"); //reserve 4kb for function
         }
-        if(instruction.find("end ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "end") == 0) {
             compiledProgram.push_back("    ret");
         }
-        if(instruction.find("return") != string::npos) {
+        else if(strcmp(instruction.c_str(), "return") == 0) {
             compiledProgram.push_back("    mov esp, ebp");
             compiledProgram.push_back("    pop ebp");
             compiledProgram.push_back("    ret");
         }
-        if(instruction.find("ifc ") != string::npos) { //if condition for char
+        else if(strcmp(instruction.c_str(), "ifc") == 0) { //if condition for char
             endifCounter++;
             uint8_t secondischar = 0;
             if (parameter3.find("'") != string::npos) secondischar = 1;
@@ -243,7 +271,7 @@ void compile(vector<string> program, int len) {
 
             }
         }
-        if(instruction.find("ifi ") != string::npos) { //if condition for int
+        else if(strcmp(instruction.c_str(), "ifi") == 0) { //if condition for int
             endifCounter++;
             uint8_t secondisint = false;
             if (isdigit(parameter3[0])) secondisint = true;
@@ -272,92 +300,93 @@ void compile(vector<string> program, int len) {
                     break;
             }
         }
-        if(instruction.find("endif") != string::npos) {
+        else if(strcmp(instruction.c_str(), "endif") == 0) {
             compiledProgram.push_back("    .endif" + to_string(endifCounter - 1) + ":");
         }
-        if(instruction.find("add ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "add") == 0) {
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
             compiledProgram.push_back("    add eax, [" + parameter3 + "]");
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
-        if(instruction.find("sub ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "sub") == 0) {
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
             compiledProgram.push_back("    sub eax, [" + parameter3 + "]");
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
-        if(instruction.find("mul ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "mul") == 0) {
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
             compiledProgram.push_back("    imul eax, [" + parameter3 + "]");
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
-        if(instruction.find("div ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "div") == 0) {
             compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
             compiledProgram.push_back("    cdq");
             compiledProgram.push_back("    idiv [" + parameter3 + "]");
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
-        if(instruction.find("cin ") != string::npos) { //char input
+        else if(strcmp(instruction.c_str(), "cin") == 0) { //char input
             compiledProgram.push_back("    call readc");
             compiledProgram.push_back("    mov byte [" + parameter1 + "], bl");
         }
-        if(instruction.find("iin ") != string::npos) { //int input
+        else if(strcmp(instruction.c_str(), "iin") == 0) { //int input
             compiledProgram.push_back("    call readc");
             compiledProgram.push_back("    sub ebx, 0x30");
             compiledProgram.push_back("    mov [" + parameter1 + "], ebx");
         }
-        if(instruction.find("outc ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "outc") == 0) { //char output
             compiledProgram.push_back("    mov ebx, [" + parameter1 + "]");
             compiledProgram.push_back("    call printc");
         }
-        if(instruction.find("outi ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "outi") == 0) { //int output
             compiledProgram.push_back("    mov ebx, [" + parameter1 + "]");
             compiledProgram.push_back("    add ebx, 0x30");
             compiledProgram.push_back("    call printc");
         }
-        if(instruction.find("call ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "call") == 0) {
             compiledProgram.push_back("    call " + parameter1);
         }
-        if(instruction.find("main") != string::npos) {
+        else if(strcmp(instruction.c_str(), "main") == 0) {
             compiledProgram.push_back("main:");
         }
-        if(instruction.find("endProgram") != string::npos) {
+        else if(strcmp(instruction.c_str(), "endProgram") == 0) {
             compiledProgram.push_back("    mov eax, 0x1");
             compiledProgram.push_back("    mov ebx, 0x0");
             compiledProgram.push_back("    int 0x80");
         }
-        if(instruction.find("assigni ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "assigni") == 0) {
             compiledProgram.push_back("    mov dword [" + parameter1 + "]," + parameter2);
         }
-        if(instruction.find("assignc ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "assignc") == 0) {
             compiledProgram.push_back("    mov byte [" + parameter1 + "]," + parameter2);
         }
-        if(instruction.find("arrasgnc ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "arrassignc") == 0) {
             compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter2 + "]," + parameter3);
         }
-        if(instruction.find("arrasgni ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "arrassigni") == 0) {
             compiledProgram.push_back("    mov dword [" + parameter1 + " + " + (to_string(stoi(parameter2)*4)) + "]," + parameter3);
         }
-        if(instruction.find("loop ") != string::npos) {
-            compiledProgram.push_back("    mov eax, " +parameter1);
+        else if(strcmp(instruction.c_str(), "loop") == 0) {
+            compiledProgram.push_back("    mov eax, " + parameter1);
             compiledProgram.push_back("    mov dword [loopTimes], eax");
             compiledProgram.push_back("    .loop" + to_string(loopCounter) + ":");
             compiledProgram.push_back("    dec dword [loopTimes]");
             loopCounter++;
         }
-        if(instruction.find("endloop") != string::npos) {
+        else if(strcmp(instruction.c_str(), "endloop") == 0) {
             compiledProgram.push_back("    cmp dword [loopTimes], 0");
             compiledProgram.push_back("    je .endloop" + to_string(loopCounter-1));
             compiledProgram.push_back("    jnz .loop" + to_string(loopCounter-1));
             compiledProgram.push_back("    .endloop" + to_string(loopCounter - 1) + ":");
         }
-        if(instruction.find("inc ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "inc") == 0) {
             compiledProgram.push_back("    inc dword [" + parameter1 + "]");
         }
-        if(instruction.find("dec ") != string::npos) {
+        else if(strcmp(instruction.c_str(), "dec") == 0) {
             compiledProgram.push_back("    dec dword [" + parameter1 + "]");
         }
-        if(instruction.find("prints ") != string::npos) {
-            compiledData.push_back("    msg" + to_string(msgCounter) + ": db " + parameter1 + ", 0x0");
+        else if(strcmp(instruction.c_str(), "prints") == 0) {
+            string message = wholeInstruction.substr(wholeInstruction.find("prints") + 7);
+            compiledData.push_back("    msg" + to_string(msgCounter) + ": db " + message + ", 0x0");
             compiledProgram.push_back("    mov edx, msg" + to_string(msgCounter));
             compiledProgram.push_back("    call prints");
             msgCounter++;
@@ -416,7 +445,9 @@ int main(int argc, char *argv[]) {
         while (!source_file.eof()) {
             string cline;
             getline(source_file, cline);
-            WULFprogram.push_back(cline);
+            if (!cline.empty()) {
+                WULFprogram.push_back(cline);
+            }
         }
         compile(WULFprogram, WULFprogram.size());
         system(("nasm -f elf32 -o " + source_name + ".o " + filename).c_str());

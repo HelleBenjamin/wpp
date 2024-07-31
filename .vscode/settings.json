@@ -4,6 +4,8 @@
         "*.tcc": "cpp",
         "string": "cpp",
         "vector": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "bitset": "cpp",
+        "string_view": "cpp"
     }
 }
