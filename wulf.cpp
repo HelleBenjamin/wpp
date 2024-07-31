@@ -20,10 +20,9 @@ vector<string> WULFprogram;
  * MIT License
 
 Syntax:
- - local <type> <name>// local variable in function
- - global <type> <name>// global variable
  - int <name>// 32 bit signed integer
  - char <name>// 8 bit signed integer
+ - array <type> <name> <size> //array, for example: array int arr 10
  - function <name> //function name
  - end //end function
  - return //return from function call
@@ -34,13 +33,17 @@ Syntax:
  - sub <dest> <op1> <op2> //sub
  - mul <dest> <op1> <op2> //mul
  - div <dest> <op1> <op2> //div
- - in <var> //read input to variable
- - out <var> //print variable
+ - cin <var> //read input to char variable
+ - iin <var> //read input to int variable
+ - outc <var> //print char variable
+ - outi <var> //print int variable
  - call <function> //call function
  - main //main function, program starts here
  - endProgram //end program
  - assignc <var> <value> //assign value to char variable
  - assigni <var> <value> //assign value to int variable
+ - arrasgnc <arr> <index> <value> //assign value to char array
+ - arrasgni <arr> <index> <value> //assign value to int array
  - # //comment
 
 
@@ -147,6 +150,13 @@ void compile(vector<string> program, int len) {
         }
         if(instruction.find("char ") != string::npos) {
             compiledVariables.push_back("   " + parameter1 + ": resb 1");
+        }
+        if(instruction.find("array ") != string::npos) {
+            if(parameter1.find("char") != string::npos) {
+                compiledVariables.push_back("   " + parameter2 + ": resb " + parameter3);
+            } else {
+                compiledVariables.push_back("   " + parameter2 + ": resd " + to_string(stoi(parameter3) * 4));
+            }
         }
         if(instruction.find("function ") != string::npos) {
             compiledProgram.push_back(parameter1 + ":");
@@ -261,12 +271,22 @@ void compile(vector<string> program, int len) {
             compiledProgram.push_back("    idiv [" + parameter3 + "]");
             compiledProgram.push_back("    mov [" + parameter1 + "], eax");
         }
-        if(instruction.find("in ") != string::npos) {
+        if(instruction.find("cin ") != string::npos) { //char input
             compiledProgram.push_back("    call readc");
-            compiledProgram.push_back("    mov ebx,[" + parameter1 + "]");
+            compiledProgram.push_back("    mov byte [" + parameter1 + "], bl");
         }
-        if(instruction.find("out ") != string::npos) {
+        if(instruction.find("iin ") != string::npos) { //int input
+            compiledProgram.push_back("    call readc");
+            compiledProgram.push_back("    sub ebx, 0x30");
+            compiledProgram.push_back("    mov [" + parameter1 + "], ebx");
+        }
+        if(instruction.find("outc ") != string::npos) {
             compiledProgram.push_back("    mov ebx, [" + parameter1 + "]");
+            compiledProgram.push_back("    call printc");
+        }
+        if(instruction.find("outi ") != string::npos) {
+            compiledProgram.push_back("    mov ebx, [" + parameter1 + "]");
+            compiledProgram.push_back("    add ebx, 0x30");
             compiledProgram.push_back("    call printc");
         }
         if(instruction.find("call ") != string::npos) {
@@ -285,6 +305,12 @@ void compile(vector<string> program, int len) {
         }
         if(instruction.find("assignc ") != string::npos) {
             compiledProgram.push_back("    mov byte [" + parameter1 + "]," + parameter2);
+        }
+        if(instruction.find("arrasgnc ") != string::npos) {
+            compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter2 + "]," + parameter3);
+        }
+        if(instruction.find("arrasgni ") != string::npos) {
+            compiledProgram.push_back("    mov dword [" + parameter1 + " + " + (to_string(stoi(parameter2)*4)) + "]," + parameter3);
         }
         line++;
     }
