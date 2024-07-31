@@ -14,21 +14,6 @@ using namespace std;
 
 vector<string> WULFprogram;
 
-struct variable{
-    string name;
-    int value;
-    int type;
-};
-
-vector<variable> variables;
-
-struct function{
-    string name;
-    int line; //used for calling
-};
-
-vector<function> functions;
-
 /* WULF Programming Language
  * Copyright (c) 2024 Benjamin H.
  * All rights reserved.
@@ -46,7 +31,6 @@ Syntax:
  - endif //end if
  - eq //equal
  - neq //not equal
- - else //after else statement
  - add <dest> <op1> <op2> //add
  - sub <dest> <op1> <op2> //sub
  - mul <dest> <op1> <op2> //mul
@@ -56,7 +40,8 @@ Syntax:
  - call <function> //call function
  - main //main function, program starts here
  - endProgram //end program
- - assign <var> <value> //assign value to variable
+ - assignc <var> <value> //assign value to char variable
+ - assigni <var> <value> //assign value to int variable
  - # //comment
 
 
@@ -82,115 +67,14 @@ int call_stack_pointer = 0;
 int line = 0;
 bool halt = 0;
 
-
-
-void interpret(string *InterpretedProgram){
-    while (line < InterpretedProgram->size()) {
-        string instruction = InterpretedProgram[line];
-        string parameter1, parameter2, parameter3, parameter4, parameter5;
-        int spaceIndex = instruction.find(' ');
-        if (spaceIndex != string::npos) {
-            parameter1 = instruction.substr(spaceIndex + 1);
-            spaceIndex = parameter1.find(' ');
-            if (spaceIndex != string::npos) {
-                parameter2 = parameter1.substr(spaceIndex + 1);
-                parameter1 = parameter1.substr(0, spaceIndex);
-                spaceIndex = parameter2.find(' ');
-                if (spaceIndex != string::npos) {
-                    parameter3 = parameter2.substr(spaceIndex + 1);
-                    parameter2 = parameter2.substr(0, spaceIndex);
-                    spaceIndex = parameter3.find(' ');
-                    if (spaceIndex != string::npos) {
-                        parameter4 = parameter3.substr(spaceIndex + 1);
-                        parameter3 = parameter3.substr(0, spaceIndex);
-                        spaceIndex = parameter4.find(' ');
-                        if (spaceIndex != string::npos) {
-                            parameter5 = parameter4.substr(spaceIndex + 1);
-                            parameter4 = parameter4.substr(0, spaceIndex);
-                        }
-                    }
-                }
-            }
-        }
-        if(halt) break;
-        if(instruction == "\n") line++;
-        if(instruction == " ") line++;
-        if(instruction.find("#") != string::npos) line++;
-        if(instruction.find("int ") != string::npos) {
-            variables.push_back({parameter1, 0, 0});
-        }
-        if(instruction.find("char ") != string::npos) {
-            variables.push_back({parameter1, 0, 1});
-        }
-        if(instruction.find("function ") != string::npos) {
-            functions.push_back({parameter1, line+1});
-        }
-        if(instruction.find("end") != string::npos) {
-            line = call_stack[call_stack_pointer - 1];
-            call_stack_pointer--;
-        }
-        if(instruction.find("return") != string::npos) {
-            line = call_stack[call_stack_pointer - 1];
-            call_stack_pointer--;
-        }
-        if(instruction.find("if ") != string::npos) {
-            line++;
-        }
-        if(instruction.find("then") != string::npos) {
-            line++;
-        }
-        if(instruction.find("else") != string::npos) {
-            line++;
-        }
-        if(instruction.find("add") != string::npos) {
-            string dest = parameter1;
-            string op1 = parameter2;
-            string op2 = parameter3;
-        }
-        if(instruction.find("sub") != string::npos) {
-            string dest = instruction.substr(4, instruction.size()-4);
-            string op1 = instruction.substr(7, instruction.size()-7);
-            string op2 = instruction.substr(10, instruction.size()-10);
-            variables[variables.size() - 1].value = variables[variables.size() - 1].value - variables[variables.size() - 2].value;
-        }
-        if(instruction.find("mul") != string::npos) {
-            string dest = instruction.substr(4, instruction.size()-4);
-            string op1 = instruction.substr(7, instruction.size()-7);
-            string op2 = instruction.substr(10, instruction.size()-10);
-            variables[variables.size() - 1].value = variables[variables.size() - 1].value * variables[variables.size() - 2].value;
-        }
-        if(instruction.find("div") != string::npos) {
-            string dest = instruction.substr(4, instruction.size()-4);
-            string op1 = instruction.substr(7, instruction.size()-7);
-            string op2 = instruction.substr(10, instruction.size()-10);
-            variables[variables.size() - 1].value = variables[variables.size() - 1].value / variables[variables.size() - 2].value;
-        }
-        if(instruction.find("out") != string::npos) {
-            cout << variables[variables.size() - 1].value << endl;
-            line++;
-        }
-        if(instruction.find("call") != string::npos) {
-            call_stack[call_stack_pointer] = line;
-            call_stack_pointer++;
-            line++;
-        }
-        if(instruction.find("return") != string::npos) {
-            line++;
-        }
-        if(instruction.find("assign") != string::npos) {
-            string dest = parameter1;
-            int val = stoi(parameter2);
-            variables[variables.size() - 1].value = val;
-        }
-        if (instruction.find("endProgram") != string::npos) halt = 1;
-        line++;
-    }
-
-}
+string filename;
+ifstream source_file;
+ofstream output_file; // output file
+string source_name, output_name;
 
 vector<string> fullyCompiledProgram; //final output
 
-void compile(string *program, int len) {
+void compile(vector<string> program, int len) {
     unsigned int endifCounter = 0;
     vector<string> compiledProgram; //supported architectures: X86 on linux, windows not supported
     vector<string> compiledVariables; //bss section
@@ -198,8 +82,8 @@ void compile(string *program, int len) {
     compiledProgram.push_back("global _start");
     compiledProgram.push_back(";wulf interpreter compiler v0.1.0");
     compiledProgram.push_back("section .text");
+
     compiledProgram.push_back("readc:"); //read character
-    compiledProgram.push_back("    mov edi, ecx");
     compiledProgram.push_back("    mov eax, 0x3");
     compiledProgram.push_back("    mov ebx, 0x0");
     compiledProgram.push_back("    mov ecx, ebx");
@@ -207,8 +91,8 @@ void compile(string *program, int len) {
     compiledProgram.push_back("    int 0x80");
     compiledProgram.push_back("    mov ecx, edi");
     compiledProgram.push_back("    ret");
+
     compiledProgram.push_back("printc:");
-    compiledProgram.push_back("    mov edi, ecx");
     compiledProgram.push_back("    push ebx");   
     compiledProgram.push_back("    mov eax, 0x4");
     compiledProgram.push_back("    mov ebx, 0x1");
@@ -218,18 +102,16 @@ void compile(string *program, int len) {
     compiledProgram.push_back("    pop ebx");
     compiledProgram.push_back("    mov ecx, edi");
     compiledProgram.push_back("    ret");
+
     compiledProgram.push_back("_start:");
-    compiledProgram.push_back("    mov ebx, 0");
-    compiledProgram.push_back("    mov ecx, 0");
-    compiledProgram.push_back("    mov edx, 0");
     compiledProgram.push_back("    mov ebp, esp");
     compiledProgram.push_back("    sub esp, 0x10000"); //reserve 64kb of stack
-    compiledProgram.push_back("main:");
+    compiledProgram.push_back("    jmp main");
 
     compiledVariables.push_back("section .bss");
-
     while (line < len) {
         string instruction = program[line];
+        instruction.erase(0, instruction.find_first_not_of("\t "));
         string parameter1, parameter2, parameter3, parameter4, parameter5;
         int spaceIndex = instruction.find(' ');
         if (spaceIndex != string::npos) {
@@ -273,7 +155,7 @@ void compile(string *program, int len) {
             compiledProgram.push_back("    mov ebp, esp");
             compiledProgram.push_back("    sub esp, 0x1000"); //reserve 4kb for function
         }
-        if(instruction.find("end") != string::npos) {
+        if(instruction.find("end ") != string::npos) {
             compiledProgram.push_back("    ret");
         }
         if(instruction.find("return") != string::npos) {
@@ -297,6 +179,52 @@ void compile(string *program, int len) {
         if(instruction.find("endif") != string::npos) {
             compiledProgram.push_back("    .endif" + to_string(endifCounter - 1) + ":");
         }
+        if(instruction.find("add ") != string::npos) {
+            compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+            compiledProgram.push_back("    add eax, [" + parameter3 + "]");
+            compiledProgram.push_back("    mov [" + parameter1 + "], eax");
+        }
+        if(instruction.find("sub ") != string::npos) {
+            compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+            compiledProgram.push_back("    sub eax, [" + parameter3 + "]");
+            compiledProgram.push_back("    mov [" + parameter1 + "], eax");
+        }
+        if(instruction.find("mul ") != string::npos) {
+            compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+            compiledProgram.push_back("    imul eax, [" + parameter3 + "]");
+            compiledProgram.push_back("    mov [" + parameter1 + "], eax");
+        }
+        if(instruction.find("div ") != string::npos) {
+            compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+            compiledProgram.push_back("    cdq");
+            compiledProgram.push_back("    idiv [" + parameter3 + "]");
+            compiledProgram.push_back("    mov [" + parameter1 + "], eax");
+        }
+        if(instruction.find("in ") != string::npos) {
+            compiledProgram.push_back("    call readc");
+            compiledProgram.push_back("    mov ebx,[" + parameter1 + "]");
+        }
+        if(instruction.find("out ") != string::npos) {
+            compiledProgram.push_back("    mov ebx, [" + parameter1 + "]");
+            compiledProgram.push_back("    call printc");
+        }
+        if(instruction.find("call ") != string::npos) {
+            compiledProgram.push_back("    call " + parameter1);
+        }
+        if(instruction.find("main") != string::npos) {
+            compiledProgram.push_back("main:");
+        }
+        if(instruction.find("endProgram") != string::npos) {
+            compiledProgram.push_back("    mov eax, 0x1");
+            compiledProgram.push_back("    mov ebx, 0x0");
+            compiledProgram.push_back("    int 0x80");
+        }
+        if(instruction.find("assigni ") != string::npos) {
+            compiledProgram.push_back("    mov dword [" + parameter1 + "]," + parameter2);
+        }
+        if(instruction.find("assignc ") != string::npos) {
+            compiledProgram.push_back("    mov byte [" + parameter1 + "]," + parameter2);
+        }
         line++;
     }
 
@@ -307,13 +235,55 @@ void compile(string *program, int len) {
     for(int i = 0; i < compiledVariables.size(); i++) {
         fullyCompiledProgram.push_back(compiledVariables[i]);
     }
+
+        for(int i = 0; i < fullyCompiledProgram.size(); i++) {
+        output_file << fullyCompiledProgram[i] << endl;
+        //cout << compiledProgram[i] << endl;
+    }
 }
 
 int main(int argc, char *argv[]) {
-    string cProgram[] = {"int cs", "int num", "char chacha", "function test"};
-    compile(cProgram, 4);
-    for (int i = 0; i < fullyCompiledProgram.size(); i++) {
-        cout << fullyCompiledProgram[i] << endl;
+    for(int i = 0; i < argc; i++) {
+        if (argc == 1) {
+            cout << "Error: No arguments" << endl;
+            cout << "Usage: ";
+            cout << helpMessage << endl;
+            return 1;
+        }   
+        if(string(argv[i]) == "-h") {
+            cout << helpMessage << endl;
+        }
+        if((string(argv[i])).find("-s") == 0) {
+            filename = argv[i+1];
+            int len = filename.length();
+            source_name = filename;
+            source_name.erase(len-4, 4); // remove .wpp
+            source_file.open(filename);
+        }
+        if((string(argv[i])).find("-o") == 0) {
+            filename = argv[i+1];
+            output_name = filename;
+            filename = filename + ".asm";
+            output_file.open(filename);
+        }
+        if(string(argv[i]) == "-v") {
+            cout << "Copyright (c) 2024 Benjamin H." << endl;
+            cout << version << endl;
+        }
     }
+    if (source_file.is_open() && output_file.is_open()) {
+        while (!source_file.eof()) {
+            string cline;
+            getline(source_file, cline);
+            WULFprogram.push_back(cline);
+        }
+        compile(WULFprogram, WULFprogram.size());
+        system(("nasm -f elf32 -o " + source_name + ".o " + filename).c_str());
+        system(("ld -m elf_i386 -o " + output_name + " -static -nostdlib " + source_name + ".o").c_str());
+        system(("rm " + source_name + ".o").c_str());
+    }
+    source_file.close();
+    output_file.close();
     return 0;
 }
+
