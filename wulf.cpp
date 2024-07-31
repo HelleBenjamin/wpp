@@ -43,7 +43,7 @@ Syntax:
  - end //end function
  - return //return from function call
  - if <condition>//conditional, example if eq num1 num2
- - then //after if statement 
+ - endif //end if
  - eq //equal
  - neq //not equal
  - else //after else statement
@@ -191,6 +191,7 @@ void interpret(string *InterpretedProgram){
 vector<string> fullyCompiledProgram; //final output
 
 void compile(string *program, int len) {
+    unsigned int endifCounter = 0;
     vector<string> compiledProgram; //supported architectures: X86 on linux, windows not supported
     vector<string> compiledVariables; //bss section
     compiledProgram.push_back("bits 32");
@@ -281,9 +282,20 @@ void compile(string *program, int len) {
             compiledProgram.push_back("    ret");
         }
         if(instruction.find("if ") != string::npos) {
+            endifCounter++;
             if (parameter1 == "eq") {
                 compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    cmp eax, [" + parameter3 + "]");
+                compiledProgram.push_back("    jne .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is not met, else continue
             }
+            if (parameter1 == "neq") {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    cmp eax, [" + parameter3 + "]");
+                compiledProgram.push_back("    je .endif" + to_string(endifCounter - 1)); //jump to end of if statement if condition is met, else continue
+            }
+        }
+        if(instruction.find("endif") != string::npos) {
+            compiledProgram.push_back("    .endif" + to_string(endifCounter - 1) + ":");
         }
         line++;
     }
