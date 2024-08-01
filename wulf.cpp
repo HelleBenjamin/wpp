@@ -49,6 +49,7 @@ Syntax:
  - inc <var> //increment variable
  - dec <var> //decrement variable
  - prints <message> //print string message
+ - arrcpy <dest> <src> <size> //copy array to
  - # //comment
 
 
@@ -375,7 +376,7 @@ void compile(vector<string> program, int len) {
         }
         else if(strcmp(instruction.c_str(), "assignc") == 0) {
             bool isvar = false;
-            if (!isdigit(parameter2[0])) isvar = true;
+            if (startsWith(parameter2.c_str(), "'")) isvar = true;
             if (isvar) {
                 compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
                 compiledProgram.push_back("    mov byte [" + parameter1 + "],al");
@@ -407,8 +408,16 @@ void compile(vector<string> program, int len) {
             }
         }
         else if(strcmp(instruction.c_str(), "loop") == 0) {
-            compiledProgram.push_back("    mov eax, " + parameter1);
-            compiledProgram.push_back("    mov dword [loopTimes], eax");
+            bool isvar = false;
+            if (!isdigit(parameter1[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter1 + "]");
+                compiledProgram.push_back("    mov dword [loopTimes], eax");
+            }
+            else {
+                compiledProgram.push_back("    mov eax, " + parameter1);
+                compiledProgram.push_back("    mov dword [loopTimes], eax");
+            }
             compiledProgram.push_back("    .loop" + to_string(loopCounter) + ":");
             compiledProgram.push_back("    dec dword [loopTimes]");
             loopCounter++;
