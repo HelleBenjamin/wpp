@@ -55,6 +55,8 @@ Syntax:
  - arrcin <arr> <index> //read input to char array
  - arriin <arr> <index> //read input to int array
  - # //comment
+ - asm: //assembly inline
+
 
 
 Example code:
@@ -479,6 +481,43 @@ void compile(vector<string> program, int len) {
                 compiledProgram.push_back("    mov ebx, [" + parameter1 + " + " + parameter2 + "]");
             }
             compiledProgram.push_back("    call printc");
+        }
+        else if(strcmp(instruction.c_str(), "arrouti") == 0) {
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov ebx, [" + parameter1 + " + eax]");
+            }
+            else {
+                compiledProgram.push_back("    mov ebx, [" + parameter1 + " + " + parameter2 + "]");
+            }
+            compiledProgram.push_back("    call printi");
+        }
+        else if(strcmp(instruction.c_str(), "arrcin") == 0) {
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov [" + parameter1 + "], eax");
+            }
+            else {
+                compiledProgram.push_back("    mov [" + parameter1 + " + " + parameter2 + "], eax");
+            }
+        }
+        else if(strcmp(instruction.c_str(), "arriin") == 0) {
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov [" + parameter1 + " + eax], ebx");
+            }
+            else {
+                compiledProgram.push_back("    mov [" + parameter1 + " + " + parameter2 + "], ebx");
+            }
+        }
+        else if(strcmp(instruction.c_str(), "asm:") == 0) {
+            compiledProgram.push_back(wholeInstruction.substr(4));
         }
         line++;
     }
