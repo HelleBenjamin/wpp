@@ -49,7 +49,11 @@ Syntax:
  - inc <var> //increment variable
  - dec <var> //decrement variable
  - prints <message> //print string message
- - arrcpy <dest> <src> <size> //copy array to
+ - arrcpy <type> <dest> <src> <index> //copy array value to variable
+ - arroutc <arr> <index> //print char array at index
+ - arrouti <arr> <index> //print int array at index
+ - arrcin <arr> <index> //read input to char array
+ - arriin <arr> <index> //read input to int array
  - # //comment
 
 
@@ -389,22 +393,24 @@ void compile(vector<string> program, int len) {
             bool isvar = false;
             if (!isdigit(parameter2[0])) isvar = true;
             if (isvar) {
-                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-                compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter3 + "],al");
+                compiledProgram.push_back("    mov eax, [" + parameter3 + "]");
+                compiledProgram.push_back("    mov ebx, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov byte [" + parameter1 + " + ebx],al");
             }
             else {
-                compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter3 + "]," + parameter2);
+                compiledProgram.push_back("    mov byte [" + parameter1 + " + " + parameter2 + "]," + parameter3);
             }
         }
         else if(strcmp(instruction.c_str(), "arrassigni") == 0) {
             bool isvar = false;
             if (!isdigit(parameter2[0])) isvar = true;
             if (isvar) {
-                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
-                compiledProgram.push_back("    mov dword [" + parameter1 + " + " + parameter3 + "],eax");
+                compiledProgram.push_back("    mov eax, [" + parameter3 + "]");
+                compiledProgram.push_back("    mov ebx, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov dword [" + parameter1 + " + ebx],eax");
             }
             else {
-                compiledProgram.push_back("    mov dword [" + parameter1 + " + " + parameter3 + "]," + parameter2);
+                compiledProgram.push_back("    mov dword [" + parameter1 + " + " + parameter2 + "]," + parameter3);
             }
         }
         else if(strcmp(instruction.c_str(), "loop") == 0) {
@@ -440,6 +446,39 @@ void compile(vector<string> program, int len) {
             compiledProgram.push_back("    mov edx, msg" + to_string(msgCounter));
             compiledProgram.push_back("    call prints");
             msgCounter++;
+        }
+        else if(strcmp(instruction.c_str(), "arrcpy") == 0) {
+            bool isvar = false;
+            if (!isdigit(parameter3[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter3 + "]");
+                compiledProgram.push_back("    mov ebx, [" + parameter4 + "]");
+                if(parameter1 == "int") {
+                    compiledProgram.push_back("    mov dword [" + parameter2 + "ebx], eax");
+                } else {
+                    compiledProgram.push_back("    mov byte [" + parameter2 + "ebx], eax");
+                }
+            }
+            else {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                if(parameter1 == "int") {
+                    compiledProgram.push_back("    mov dword [" + parameter2 + " + " + parameter4 + "], eax");
+                } else {
+                    compiledProgram.push_back("    mov byte [" + parameter2 + " + " + parameter4 + "], eax");
+                }
+            }
+        }
+        else if(strcmp(instruction.c_str(), "arroutc") == 0) {
+            bool isvar = false;
+            if (!isdigit(parameter2[0])) isvar = true;
+            if (isvar) {
+                compiledProgram.push_back("    mov eax, [" + parameter2 + "]");
+                compiledProgram.push_back("    mov ebx, [" + parameter1 + " + eax]");
+            }
+            else {
+                compiledProgram.push_back("    mov ebx, [" + parameter1 + " + " + parameter2 + "]");
+            }
+            compiledProgram.push_back("    call printc");
         }
         line++;
     }
