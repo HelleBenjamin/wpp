@@ -522,7 +522,7 @@ void compile(vector<string> program, int len) {
             }
         }
         else if(strcmp(instruction.c_str(), "asm:") == 0) {
-            compiledProgram.push_back(wholeInstruction.substr(4));
+            compiledProgram.push_back(wholeInstruction.substr(wholeInstruction.find("asm:") + 4));
         }
         line++;
     }
