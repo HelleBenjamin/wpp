@@ -229,6 +229,8 @@ void compile(vector<string> program, int len) {
             compiledProgram.push_back("    sub esp, 0x1000"); //reserve 4kb for function
         }
         else if(strcmp(instruction.c_str(), "end") == 0) {
+            compiledProgram.push_back("    mov esp, ebp");
+            compiledProgram.push_back("    pop ebp");
             compiledProgram.push_back("    ret");
         }
         else if(strcmp(instruction.c_str(), "return") == 0) {
@@ -522,7 +524,7 @@ void compile(vector<string> program, int len) {
             }
         }
         else if(strcmp(instruction.c_str(), "asm:") == 0) {
-            compiledProgram.push_back(wholeInstruction.substr(wholeInstruction.find("asm:") + 4));
+            compiledProgram.push_back("   " + wholeInstruction.substr(wholeInstruction.find("asm:") + 4));
         }
         line++;
     }
