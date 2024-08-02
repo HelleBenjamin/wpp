@@ -142,6 +142,11 @@ void compile(vector<string> program, int len) {
     compiledProgram.push_back("    add esp, 0x4");
     compiledProgram.push_back("    ret");
 
+    compiledProgram.push_back("printi:");
+    compiledProgram.push_back("    add ebx, 0x30");
+    compiledProgram.push_back("    call printc");
+    compiledProgram.push_back("    ret");
+
     compiledProgram.push_back("prints:");
     compiledProgram.push_back("    .prints_loop:");
     compiledProgram.push_back("        mov ebx, [edx]");
